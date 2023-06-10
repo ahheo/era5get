@@ -1,0 +1,116 @@
+#!/usr/bin/env python3 
+
+import yaml
+import os
+import re
+import argparse
+import datetime
+import cdsapi
+
+
+parser = argparse.ArgumentParser(
+        prog='era5get',
+        description='Retrive ERA5 hourly data from cds as forcing of WRF',
+        epilog=''
+        )
+
+parser.add_argument('opt',
+                    type=str,
+                    choices=['e5pl','e5sfc','e5land'],
+                    help='Category, currently accepts the following options: '
+                         'e5pl (ERA5 data on pressure levels) | '
+                         'e5sfc (ERA5 data on single level) | '
+                         'e5land (ERA5-land)'
+                    )
+parser.add_argument('-d', '--date',
+                    type=str,
+                    help='Specify on which dates data should be retrieved '
+                         'acceptable formats: YYYY (days in YYYY) | '
+                         'YYYYMM (days in YYYYMM) | YYYYMMDD (this day) | '
+                         'yyyy-YYYY (days in years between yyyy and YYYY) | '
+                         'yyyymm-YYYYMM (days in months between yyyymm and '
+                         'YYYYMM) | yyyymmdd-YYYYMMDD (days between the two '
+                         'dates)'
+                    )
+parser.add_argument('-a', '--area',
+                    type=str,
+                    help='Specify the area wiothin which data should be '
+                         'retrieved: NN,WW,SS,EE'
+                    )
+parser.add_argument('-p', '--path',
+                    type=str,
+                    help='Specify the directory to store the grib files'
+                    )
+
+args = parser.parse_args()
+
+delta_day = datetime.timedelta(days=1)
+
+def _get_dates(date):
+    if '-' not in date:
+        yyyy = date[:4]
+        mm = date[4:6]
+        dd = date[6:8]
+        if not mm:
+            date0 = datetime.date(int(yyyy), 1, 1)
+            date1 = datetime.date(int(yyyy), 12, 31)
+        elif not dd:
+            date0 = datetime.date(int(yyyy), int(mm), 1)
+            date1 = datetime.date(int(yyyy), int(mm) + 1, 1) - delta_day
+        else:
+            date0 = datetime.date(int(yyyy), int(mm), int(dd))
+            date1 = date0
+    else:
+        date_ = date.split('-')
+        if len(date_[0]) != len(date_[1]) or date_[0] >= date_[1]:
+            raise Exception("I don't know what to do!")
+        else:
+            y0 = date_[0][:4]
+            y1 = date_[1][:4]
+            m0 = date_[0][4:6]
+            m1 = date_[1][4:6]
+            d0 = date_[0][6:8]
+            d1 = date_[1][6:8]
+        if not m0:
+            date0 = datetime.date(int(y0), 1, 1)
+            date1 = datetime.date(int(y1), 12, 31)
+        elif not d0:
+            date0 = datetime.date(int(y0), int(m0), 1)
+            date1 = datetime.date(int(y1), int(m1) + 1, 1) - delta_day
+        else:
+            date0 = datetime.date(int(y0), int(m0), int(d0))
+            date1 = datetime.date(int(y1), int(m1), int(d1))
+    return (date0, date1)
+
+with open('{}.yml'.format(args.opt), 'r') as yf:
+    rq_args = yaml.safe_load(yf)
+
+if args.area:
+    rq_args[1].update(dict(area=args.area.split(',')))
+
+c = cdsapi.Client()
+
+def _dl(date):
+    ddir = str(date)[:7]
+    ddir = os.path.join(args.path, ddir) if args.path else ddir
+    print('mkdir: {}.'.format(ddir))
+    os.makedirs(ddir, exist_ok=True)
+    fn = re.sub(r'\d{4}-\d{2}-\d{2}',
+                str(date),
+                os.path.basename(rq_args[2])
+                )
+    rq_args[2] = os.path.join(ddir, fn)
+    rq_args[1].update(dict(
+        year='{:04d}'.format(date.year),
+        month='{:02d}'.format(date.month),
+        day='{:02d}'.format(date.day),
+        ))
+    print('data will be save to {}'.format(rq_args[2]))
+    c.retrieve(*rq_args)
+
+if args.date:
+    date0, date1 = _get_dates(args.date)
+    while (date0 <= date1):
+        print('Retrieving data for day {}'.format(str(date0)))
+        _dl(date0)
+        date0 += delta_day
