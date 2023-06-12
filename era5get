@@ -34,8 +34,8 @@ parser.add_argument('-d', '--date',
                     )
 parser.add_argument('-a', '--area',
                     type=str,
-                    help='Specify the area wiothin which data should be '
-                         'retrieved: NN,WW,SS,EE'
+                    help='Specify the area within which data should be '
+                         'retrieved in format of NN,WW,SS,EE'
                     )
 parser.add_argument('-p', '--path',
                     type=str,
