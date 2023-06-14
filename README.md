@@ -27,7 +27,7 @@ options:
 
 ## what you will need:
 
-```
+```python
 import yaml                                                                     
 import os                                                                       
 import re                                                                       
@@ -38,5 +38,5 @@ import cdsapi
 
 ## what else you will need:
 
-for help on cdsapi (the Climate Data Store Application Program Interface),
-please refer to [cds.climate.copernicus.eu/api-how-to](https://cds.climate.copernicus.eu/api-how-to).
+refer to [cds.climate.copernicus.eu/api-how-to](https://cds.climate.copernicus.eu/api-how-to) 
+for help on cdsapi (the Climate Data Store Application Program Interface).
