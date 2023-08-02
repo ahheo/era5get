@@ -9,7 +9,7 @@ import cdsapi
 
 
 parser = argparse.ArgumentParser(
-        prog='era5get',
+        prog='era5wrf',
         description='Retrive ERA5 hourly data from cds as forcing of WRF',
         epilog=''
         )
