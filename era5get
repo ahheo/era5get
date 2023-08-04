@@ -1,0 +1,153 @@
+#!/usr/bin/env python3 
+
+import yaml
+import os
+import re
+import argparse
+import datetime
+import cdsapi
+
+
+parser = argparse.ArgumentParser(
+        prog='era5get',
+        description='Retrive ERA5 data from cds according to a yaml file and '
+                    'modifications',
+        epilog=''
+        )
+
+parser.add_argument('opt',
+                    type=str,
+                    help='Category, currently accepts the following options: '
+                         'e5pl (ERA5 data on pressure levels) | '
+                         'e5sfc (ERA5 data on single level) | '
+                         'e5land (ERA5-land) | yaml file'
+                    )
+parser.add_argument('-d', '--date',
+                    type=str,
+                    help='Specify on which dates/months data should be '
+                         'retrieved acceptable formats: YYYY (days/months in '
+                         'YYYY) | YYYYMM (days in YYYYMM or this month) | '
+                         'YYYYMMDD (this day or the month of this day) | '
+                         'yyyy-YYYY (days/months in years between yyyy and '
+                         'YYYY) | yyyymm-YYYYMM (days in months between '
+                         'yyyymm and YYYYMM or these months) | '
+                         'yyyymmdd-YYYYMMDD (days/months between the two '
+                         'dates)'
+                    )
+parser.add_argument('-u', '--updates',
+                    type=str,
+                    help='Update the second argument to c.retrieve() '
+                         'in format of '
+                         'key0:value0,value1,...;key2:value0,value1,... . '
+                         'f.ex: area:NN,WW,SS,EE'
+                    )
+parser.add_argument('-p', '--path',
+                    type=str,
+                    help='Specify the directory to store the grib files'
+                    )
+
+args = parser.parse_args()
+
+_here_ = os.path.dirname(__file__)
+
+if args.opt in ['e5pl', 'e5sfc', 'e5land']:
+    with open('{}.yml'.format(args.opt), 'r') as yf:
+        rq_args = yaml.safe_load(yf)
+else:
+    fn = args.opt if args.opt[-4:] == '.yml' else f'{args.opt}.yml'
+    try:
+        with open(fn, 'r') as yf:
+            rq_args = yaml.safe_load(yf)
+    except:
+        try:
+            with open(os.path.join(_here_, fn), 'r') as yf:
+                rq_args = yaml.safe_load(yf)
+        except:
+            emsg = "yaml file not found!"
+            raise Exception(emsg)
+
+_isM_ = 'monthly' in rq_args[0]
+fn0, fn1 = os.path.splitext(rq_args[2])
+
+delta_day = datetime.timedelta(days=1)
+
+def _get_dates(date):
+    if '-' not in date:
+        yyyy = date[:4]
+        mm = date[4:6]
+        dd = date[6:8]
+        if not mm:
+            date0 = datetime.date(int(yyyy), 1, 1)
+            date1 = datetime.date(int(yyyy), 12, 31)
+        elif not dd:
+            date0 = datetime.date(int(yyyy), int(mm), 1)
+            date1 = datetime.date(int(yyyy), int(mm) + 1, 1) - delta_day
+        else:
+            date0 = datetime.date(int(yyyy), int(mm), int(dd))
+            date1 = date0
+    else:
+        date_ = date.split('-')
+        if len(date_[0]) != len(date_[1]) or date_[0] >= date_[1]:
+            emsg = "I don't know what to do with the specipfied DATE!"
+            raise Exception(emsg)
+        else:
+            y0 = date_[0][:4]
+            y1 = date_[1][:4]
+            m0 = date_[0][4:6]
+            m1 = date_[1][4:6]
+            d0 = date_[0][6:8]
+            d1 = date_[1][6:8]
+        if not m0:
+            date0 = datetime.date(int(y0), 1, 1)
+            date1 = datetime.date(int(y1), 12, 31)
+        elif not d0:
+            date0 = datetime.date(int(y0), int(m0), 1)
+            date1 = datetime.date(int(y1), int(m1) + 1, 1) - delta_day
+        else:
+            date0 = datetime.date(int(y0), int(m0), int(d0))
+            date1 = datetime.date(int(y1), int(m1), int(d1))
+    return (date0, date1)
+
+def _ss(ss):
+    tmp_ = ss.split(':')
+    if len(tmp_) == 2:
+        return (tmp_[0], tmp_[1].split(','))
+
+if args.updates:
+    rq_args[1].update(
+            {_ss(i)[0]:_ss(i)[1] for i in args.updates.split(';') if i}
+            )
+
+c = cdsapi.Client()
+
+def _dl(date):
+    tmp0 = '' if _isM_ else str(date)[:7]
+    tmp1 = [i for i in (args.path, rq_args[0], tmp0) if i]
+    ddir = os.path.join(*tmp1)
+    print('mkdir: {}.'.format(ddir))
+    os.makedirs(ddir, exist_ok=True)
+    fn = '{}_{}{}'.format(fn0, str(date)[:4] if _isM_ else str(date), fn1)
+    rq_args[2] = os.path.join(ddir, fn)
+    rq_args[1].update(
+            dict(year=str(date)) if _isM_ else
+            dict(
+                year='{:04d}'.format(date.year),
+                month='{:02d}'.format(date.month),
+                day='{:02d}'.format(date.day),
+        ))
+    print('data will be save to {}'.format(rq_args[2]))
+    c.retrieve(*rq_args)
+
+if args.date:
+    date0, date1 = _get_dates(args.date)
+    if _isM_:
+        year0, year1 = date0.year, date1.year
+        while (year0 <= year1):
+            print('Retrieving data for year {}'.format(year0))
+            _dl(year0)
+            year0 += 1
+    else:
+        while (date0 <= date1):
+            print('Retrieving data for day {}'.format(str(date0)))
+            _dl(date0)
+            date0 += delta_day

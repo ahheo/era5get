@@ -46,6 +46,9 @@ args = parser.parse_args()
 
 delta_day = datetime.timedelta(days=1)
 
+_here_ = os.path.dirname(__file__)
+_opj = os.path.join
+
 def _get_dates(date):
     if '-' not in date:
         yyyy = date[:4]
@@ -82,7 +85,7 @@ def _get_dates(date):
             date1 = datetime.date(int(y1), int(m1), int(d1))
     return (date0, date1)
 
-with open('{}.yml'.format(args.opt), 'r') as yf:
+with open(_opj(_here_, '{}.yml'.format(args.opt)), 'r') as yf:
     rq_args = yaml.safe_load(yf)
 
 if args.area:
