@@ -59,11 +59,6 @@ options:
 ## what you will need:
 
 ```python
-import yaml                                                                     
-import os                                                                       
-import re                                                                       
-import argparse                                                                 
-import datetime                                                                 
 import cdsapi
 ```
 
