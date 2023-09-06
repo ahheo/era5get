@@ -94,17 +94,17 @@ if args.area:
 c = cdsapi.Client()
 
 def _dl(date):
-    ddir = str(date)[:7]
+    ddir = date.strftime('%Y%m')
     ddir = os.path.join(args.path, ddir) if args.path else ddir
     print('mkdir: {}.'.format(ddir))
     os.makedirs(ddir, exist_ok=True)
-    fn = re.sub(r'\d{4}-\d{2}-\d{2}',
-                str(date),
+    fn = re.sub(r'\d{8}',
+                date.strftime('%Y%m%d'),
                 os.path.basename(rq_args[2])
                 )
     rq_args[2] = os.path.join(ddir, fn)
     rq_args[1].update(dict(
-        year='{:04d}'.format(date.year),
+        year=date.strftime('%Y'),
         month='{:02d}'.format(date.month),
         day='{:02d}'.format(date.day),
         ))
