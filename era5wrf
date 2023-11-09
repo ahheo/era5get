@@ -79,7 +79,7 @@ def _get_dates(date):
             date1 = datetime.date(int(y1), 12, 31)
         elif not d0:
             date0 = datetime.date(int(y0), int(m0), 1)
-            date1 = datetime.date(int(y1), int(m1) + 1, 1) - delta_day
+            date1 = datetime.date(int(y1), int(m1)%12 + 1, 1) - delta_day
         else:
             date0 = datetime.date(int(y0), int(m0), int(d0))
             date1 = datetime.date(int(y1), int(m1), int(d1))
