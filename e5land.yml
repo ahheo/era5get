@@ -50,4 +50,4 @@
   - volumetric_soil_water_layer_3
   - volumetric_soil_water_layer_4
   year: '2023'
-- era5_land_2023-01-01.grib
+- era5_land_20230101.grib
