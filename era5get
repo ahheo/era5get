@@ -113,7 +113,7 @@ def _get_dates(date):
 def _ss(ss):
     tmp_ = ss.split(':')
     if len(tmp_) == 2:
-        return (tmp_[0], tmp_[1].split(','))
+        return (tmp_[0], tmp_[1].split(',') if ',' in tmp_[1] else tmp_[1])
 
 if args.updates:
     rq_args[1].update(
