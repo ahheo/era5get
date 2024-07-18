@@ -44,7 +44,7 @@
   - soil_temperature_level_3
   - soil_temperature_level_4
   - surface_pressure
-  - total_column_snow_water
+  - snow_depth
   - volumetric_soil_water_layer_1
   - volumetric_soil_water_layer_2
   - volumetric_soil_water_layer_3

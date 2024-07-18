@@ -16,11 +16,12 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument('opt',
                     type=str,
-                    choices=['e5pl','e5sfc','e5land'],
+                    choices=['e5pl','e5sfc','e5land','e5sd'],
                     help='Category, currently accepts the following options: '
                          'e5pl (ERA5 data on pressure levels) | '
                          'e5sfc (ERA5 data on single level) | '
-                         'e5land (ERA5-land)'
+                         'e5land (ERA5-land) | '
+                         'e5sd (ERA5 snow_depth)'
                     )
 parser.add_argument('-d', '--date',
                     type=str,
